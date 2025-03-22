@@ -221,7 +221,7 @@ docker restart wts
 Let's assume you have a local image called image_test.png. You can upload it to IPFS either via the IPFS command line or via a direct HTTP request to the API.
 
 ```
-curl -u <youruser> <yourpassword>  -X POST -F file=@imagine_test.png "http://127.0.0.1:5001/api/v0/add"
+curl  -X POST -F file=@imagine_test.png "http://127.0.0.1:5001/api/v0/add"
 ```
 
 The response will be something like:

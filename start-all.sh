@@ -22,12 +22,14 @@ ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/8080
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin "[\"*\"]"
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods "[\"PUT\", \"GET\", \"POST\"]"
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Credentials "[\"true\"]"
-ipfs config --json API.Authorizations '{
-  "cardano": {
-    "AuthSecret": "basic:'$USER':'$PASS'",
-    "AllowedPaths": ["/api/v0"]
-  }
-}'
+
+## IF I ADD THIS HASKELL SERVER NEEDS ALSO AUTH
+# ipfs config --json API.Authorizations '{
+#   "cardano": {
+#     "AuthSecret": "basic:'$USER':'$PASS'",
+#     "AllowedPaths": ["/api/v0"]
+#   }
+# }'
 
 
 # Start IPFS daemon
