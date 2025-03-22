@@ -185,7 +185,14 @@ docker pull mariusgeorgescu/wine-tokenization-service:amd64
 Eg. of running the server (with default test configuration) and your user and pass for the Basic Auth:
 
 ```
-docker run -d -p 8082:8082 --name wts mariusgeorgescu/wine-tokenization-service:amd64 server <youruser> <yourpassword> 
+docker run -d  \
+  -p 4001:4001 \
+  -p 5001:5001 \
+  -p 8080:8080 \
+  -p 8082:8082 \
+  -v ~/.ipfs:/data/ipfs \
+  --name wts \
+  mariusgeorgescu/wine-tokenization-service:amd64  server <youruser> <yourpassword> 
 ```
 
 #### 6.3.3 Add the configuration files
