@@ -190,7 +190,7 @@ docker run -d  \
   -p 5001:5001 \
   -p 8080:8080 \
   -p 8082:8082 \
-  -v ~/.ipfs:/data/ipfs \
+  -v <your-ipfs-volume>:/data/ipfs \
   --name wts \
   mariusgeorgescu/wine-tokenization-service:amd64  server <youruser> <yourpassword> 
 ```
@@ -211,6 +211,33 @@ docker restart wts
 
 ## 7. Usage
 
+### 7.1. IPFS API
+
+4001 (Swarm port) 
+5001 (API port)
+8080 (Gateway port) 
+
+Let's assume you have a local image called image_test.png. You can upload it to IPFS either via the IPFS command line or via a direct HTTP request to the API.
+
+```
+curl -X POST -F file=@imagine_test.png "http://127.0.0.1:5001/api/v0/add"
+```
+
+The response will be something like:
+
+```
+{
+  "Name": "imagine_test.png",
+  "Hash": "Qm...unHashAlTau...XYZ",
+  "Size": "12345"
+}
+```
+Remember Hash to be able to access the image via IPFS.
+View image via gateway (port 8080).
+Open address in browser:
+```
+ http://127.0.0.1:8080/ipfs/<HASH>
+```
 
 ***
 ### 7.1. Deploying validators

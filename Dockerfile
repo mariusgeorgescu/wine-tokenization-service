@@ -117,7 +117,10 @@ EXPOSE 4001
 EXPOSE 5001
 EXPOSE 8080
 
-RUN ipfs daemon --init &
+
+# Initialize IPFS
+RUN ipfs init
+
 
 # Install the project
 WORKDIR /wine
@@ -139,6 +142,3 @@ RUN cabal build all --ghc-options="-optl-Wl,--stub-group-size=0x3FFDFFE"
 
 # Add and Install Application Code
 RUN cabal install server --ghc-options="-optl-Wl,--stub-group-size=0x3FFDFFE"  
-
-
-CMD ["server"]

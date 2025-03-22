@@ -7,11 +7,26 @@ if [ $# -ne 0 ] && [ $# -ne 2 ]; then
   exit 1
 fi
 
-ipfs daemon --init &
+# set basic auth for ipfs
+if [ $# -ne 2 ]; then
+  AUTH=$(echo -n "$1:$2" | base64)
+else
+  AUTH=$(echo -n "cardano:lovelace" | base64)
+fi
 
-# Optional: Wait a few seconds for IPFS to be ready,
-# or poll with a simple check if you need to ensure IPFS is fully running.
+
+# Config IPFS API
+ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin "[\"*\"]"
+ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods "[\"PUT\", \"GET\", \"POST\"]"
+ipfs config --json API.HTTPHeaders.Access-Control-Allow-Credentials "[\"true\"]"
+ipfs config --json API.HTTPHeaders.Authorization '["Basic '"$AUTH"'"]'
+
+
+# Start IPFS daemon
+ipfs daemon &
+
+# Optional: Wait a few seconds for IPFS to fully initialize
 sleep 5
 
-# Start your Haskell server (in the foreground)
+# Start your server, passing along any given arguments
 exec server "$@"
