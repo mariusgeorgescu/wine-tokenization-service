@@ -56,7 +56,7 @@ RUN apt-get install -y \
     libc6-dev \
     && \
     apt-get clean
-    
+
 
 ENV PATH="/root/.cabal/bin:/root/.local/bin:$PATH"
 
@@ -89,8 +89,8 @@ RUN git clone https://github.com/supranational/blst && \
     cp bindings/blst_aux.h bindings/blst.h bindings/blst.hpp  /usr/local/include/ && \
     cp libblst.a /usr/local/lib/ && \
     chmod u=rw,go=r /usr/local/lib/pkgconfig/libblst.pc \
-      /usr/local/include/blst_aux.h /usr/local/include/blst.h /usr/local/include/blst.hpp \
-      /usr/local/lib/libblst.a
+    /usr/local/include/blst_aux.h /usr/local/include/blst.h /usr/local/include/blst.hpp \
+    /usr/local/lib/libblst.a
 
 
 WORKDIR /
@@ -101,11 +101,23 @@ RUN wget https://dist.ipfs.tech/kubo/v0.33.2/kubo_v0.33.2_linux-${TARGETARCH}.ta
 
 RUN bash /kubo/install.sh
 
-# Initialize IPFS
-RUN ipfs init
+# Set an environment variable so IPFS knows where the repo is:
+ENV IPFS_PATH=/data/ipfs
 
-# Start IPFS daemon
-RUN ipfs daemon &
+# Optional: Create the folder (sometimes done automatically by IPFS on init)
+RUN mkdir -p /data/ipfs
+
+# Expose the IPFS data directory as a volume.
+# This tells Docker (and users of the image) that /data/ipfs should be mounted
+# or will be treated as persistent data storage by default.
+VOLUME /data/ipfs
+
+# Expose the IPFS ports
+EXPOSE 4001
+EXPOSE 5001
+EXPOSE 8080
+
+RUN ipfs daemon --init &
 
 # Install the project
 WORKDIR /wine
