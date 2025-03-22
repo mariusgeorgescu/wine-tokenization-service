@@ -18,8 +18,9 @@
       - [6.3.3 Add the configuration files](#633-add-the-configuration-files)
       - [6.3.4 Restart](#634-restart)
   - [7. Usage](#7-usage)
-    - [7.1. Deploying validators](#71-deploying-validators)
-    - [7.2. Starting the service](#72-starting-the-service)
+    - [7.1. IPFS API](#71-ipfs-api)
+    - [7.2. Manual - Deploying validators](#72-manual---deploying-validators)
+    - [7.3. Manual - Starting the service](#73-manual---starting-the-service)
   - [8. License](#8-license)
   - [9. Contributions, Feedback and Support](#9-contributions-feedback-and-support)
   - [10. Future Milestones](#10-future-milestones)
@@ -220,7 +221,7 @@ docker restart wts
 Let's assume you have a local image called image_test.png. You can upload it to IPFS either via the IPFS command line or via a direct HTTP request to the API.
 
 ```
-curl -X POST -F file=@imagine_test.png "http://127.0.0.1:5001/api/v0/add"
+curl -u <youruser> <yourpassword>  -X POST -F file=@imagine_test.png "http://127.0.0.1:5001/api/v0/add"
 ```
 
 The response will be something like:
@@ -240,7 +241,7 @@ Open address in browser:
 ```
 
 ***
-### 7.1. Deploying validators
+### 7.2. Manual - Deploying validators
 ***
 
  * This service requires validators to be deployed and to be used as reference UTxOs in the transactions.  The validators can be deployed with the following command.
@@ -255,7 +256,7 @@ admin deploy-validator payment.skey
 	- a file named **"wine_contract_blueprint"** which contains the validator's blueprint.
 
 ***
-### 7.2. Starting the service
+### 7.3. Manual - Starting the service
 ***
 
  * Once the validators are deployed, the service can be started with the following command:
