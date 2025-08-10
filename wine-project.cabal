@@ -92,9 +92,9 @@ library
     , bytestring
     , containers
     , extra
+    , mtl
     , swagger2
     , text
-    , mtl
 
   --- Cardano specific dependencies
   build-depends:
@@ -133,6 +133,7 @@ executable server
   hs-source-dirs: src/Server
   ghc-options:    -threaded -rtsopts -with-rtsopts=-T
   other-modules:
+    App
     IPFS
     RestAPI
 
@@ -143,14 +144,17 @@ executable server
     , bytestring                   ^>=0.11.5
     , data-has
     , extra
+    , http-client
+    , http-client-tls
     , http-types                   ^>=0.12.4
     , ipfs
     , lens                         ^>=5.2.3
     , lzma                         ^>=0.0.1.1
     , mtl
     , rio
-    , servant-server
+    , servant-client
     , servant-options
+    , servant-server
     , servant-swagger
     , servant-swagger-ui
     , servant-swagger-ui-core

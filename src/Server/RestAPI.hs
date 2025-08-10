@@ -7,6 +7,7 @@ import Control.Monad.Except
 import Control.Exception (throw)
 import Control.Exception.Extra (try)
 import Control.Lens ((&), (.~), (?~))
+import RIO (ask, runRIO, liftIO)
 import Data.ByteString.Lazy qualified as BS
 import Data.List (lookup)
 import Data.Swagger
@@ -37,6 +38,8 @@ import RIO.Text qualified as T
 import Servant
 import Servant.Swagger
 import Servant.Swagger.UI
+
+import App (AppEnv(..), AppM(..))
 
 newtype BinaryData = BinaryData {unBinaryData :: BS.ByteString}
     deriving (Show, Eq, Generic)
@@ -158,68 +161,75 @@ apiSwagger =
             ?~ "GPL-3.0 license"
         & host .~ Nothing
 
-wineServer :: WineOffchainContext -> ServerT WineREST IO
-wineServer ctx =
-    swaggerSchemaUIServerT apiSwagger -- Swagger API
-        :<|> const -- usr
-            ( txServer ctx -- Tx API
-                :<|> handleGetNFT ctx -- Lookup API
-                :<|> handleAddIPFS -- IPFS API
+wineServer :: ServerT WineREST AppM
+wineServer =
+    swaggerSchemaUIServerT apiSwagger
+        :<|> const
+            ( txServer
+                :<|> handleGetNFT
+                :<|> handleAddIPFS
             )
 
-handleAddIPFS :: BinaryData -> IO String
+handleAddIPFS :: BinaryData -> AppM String
 handleAddIPFS (BinaryData bs) = addByteStringToIPFS bs
 
-txServer :: WineOffchainContext -> ServerT WineTxAPI IO
-txServer ctx wait =
-    handleMintBatchTx ctx wait
-        :<|> handleMintBottleTx ctx wait
-        :<|> handleUpdateBatchTx ctx wait
-        :<|> handleUpdateBottleTx ctx wait
-        :<|> handleBurnUserTx ctx wait
-        :<|> handleBurnRefTx ctx wait
+txServer :: ServerT WineTxAPI AppM
+txServer wait =
+    handleMintBatchTx wait
+        :<|> handleMintBottleTx wait
+        :<|> handleUpdateBatchTx wait
+        :<|> handleUpdateBottleTx wait
+        :<|> handleBurnUserTx wait
+        :<|> handleBurnRefTx wait
 
-handleMintBatchTx :: WineOffchainContext -> Bool -> WineBatchDTO -> IO TxResp
-handleMintBatchTx ctx wait (WineBatchDTO i d s) = do
+handleMintBatchTx :: Bool -> WineBatchDTO -> AppM TxResp
+handleMintBatchTx wait (WineBatchDTO i d s) = do
     d' <- addTokenDataToIPFS d
-    mkTxResp <$> runWineTx wait ctx (WineInteraction MintBatch (Just (Batch i d' s)))
+    AppEnv{aeWineOffchainCtx=ctx} <- ask
+    liftIO $ mkTxResp <$> runWineTx wait ctx (WineInteraction MintBatch (Just (Batch i d' s)))
 
-handleMintBottleTx :: WineOffchainContext -> Bool -> WineBottleDTO -> IO TxResp
-handleMintBottleTx ctx wait (WineBottleDTO i d s) = do
+handleMintBottleTx :: Bool -> WineBottleDTO -> AppM TxResp
+handleMintBottleTx wait (WineBottleDTO i d s) = do
     d' <- addTokenDataToIPFS d
-    mkTxResp <$> runWineTx wait ctx (WineInteraction MintBottle (Just (Bottle i d' s)))
+    AppEnv{aeWineOffchainCtx=ctx} <- ask
+    liftIO $ mkTxResp <$> runWineTx wait ctx (WineInteraction MintBottle (Just (Bottle i d' s)))
 
-handleUpdateBatchTx :: WineOffchainContext -> Bool -> GYAssetClass -> WineBatchDTO -> IO TxResp
-handleUpdateBatchTx ctx wait batchId (WineBatchDTO i d s) = do
+handleUpdateBatchTx :: Bool -> GYAssetClass -> WineBatchDTO -> AppM TxResp
+handleUpdateBatchTx wait batchId (WineBatchDTO i d s) = do
     d' <- addTokenDataToIPFS d
-    mkTxResp <$> runWineTx wait ctx (WineInteraction (UpdateBatch batchId) (Just (Batch i d' s)))
+    AppEnv{aeWineOffchainCtx=ctx} <- ask
+    liftIO $ mkTxResp <$> runWineTx wait ctx (WineInteraction (UpdateBatch batchId) (Just (Batch i d' s)))
 
-handleUpdateBottleTx :: WineOffchainContext -> Bool -> GYAssetClass -> WineBottleDTO -> IO TxResp
-handleUpdateBottleTx ctx wait bottleId (WineBottleDTO i d s) = do
+handleUpdateBottleTx :: Bool -> GYAssetClass -> WineBottleDTO -> AppM TxResp
+handleUpdateBottleTx wait bottleId (WineBottleDTO i d s) = do
     d' <- addTokenDataToIPFS d
-    mkTxResp <$> runWineTx wait ctx (WineInteraction (UpdateBottle bottleId) (Just (Bottle i d' s)))
+    AppEnv{aeWineOffchainCtx=ctx} <- ask
+    liftIO $ mkTxResp <$> runWineTx wait ctx (WineInteraction (UpdateBottle bottleId) (Just (Bottle i d' s)))
 
-handleBurnUserTx :: WineOffchainContext -> Bool -> GYAssetClass -> IO TxResp
-handleBurnUserTx ctx wait tokenId = do
-    mkTxResp <$> runWineTx wait ctx (WineInteraction (BurnUserToken tokenId) Nothing)
+handleBurnUserTx :: Bool -> GYAssetClass -> AppM TxResp
+handleBurnUserTx wait tokenId = do
+    AppEnv{aeWineOffchainCtx=ctx} <- ask
+    liftIO $ mkTxResp <$> runWineTx wait ctx (WineInteraction (BurnUserToken tokenId) Nothing)
 
-handleBurnRefTx :: WineOffchainContext -> Bool -> GYAssetClass -> IO TxResp
-handleBurnRefTx ctx wait tokenId = do
-    mkTxResp <$> runWineTx wait ctx (WineInteraction (BurnRefToken tokenId) Nothing)
+handleBurnRefTx :: Bool -> GYAssetClass -> AppM TxResp
+handleBurnRefTx wait tokenId = do
+    AppEnv{aeWineOffchainCtx=ctx} <- ask
+    liftIO $ mkTxResp <$> runWineTx wait ctx (WineInteraction (BurnRefToken tokenId) Nothing)
 
-handleGetNFT :: WineOffchainContext -> GYAssetClass -> IO WineTokenDT
-handleGetNFT (WineOffchainContext (WineAdminContext{..}) providetCtx) tokenId = do
-    w <- runQuery providetCtx $ getWineTokenFromValidator (assetClassToPlutus tokenId) wineValidatorRef
+handleGetNFT :: GYAssetClass -> AppM WineTokenDT
+handleGetNFT tokenId = do
+    AppEnv{aeWineOffchainCtx=(WineOffchainContext (WineAdminContext{..}) providetCtx)} <- ask
+    w <- liftIO $ runQuery providetCtx $ getWineTokenFromValidator (assetClassToPlutus tokenId) wineValidatorRef
     case w of
-        Left err -> throw $ err400{errBody = fromString err}
+        Left err -> liftIO $ throw $ err400{errBody = fromString err}
         Right wt -> do
             let wtdt = fromWineToken wt
             let d = getTokenData wtdt
             d' <- getTokenDataFromIPFS d
-            return $ updateTokenData wtdt d'
+            pure $ updateTokenData wtdt d'
 
-restAPIapp :: Text -> Text -> WineOffchainContext -> Application
-restAPIapp usr pass ctx =
+restAPIapp :: Text -> Text -> AppEnv -> Application
+restAPIapp usr pass env =
     cors
         ( \req ->
             let
@@ -241,10 +251,13 @@ restAPIapp usr pass ctx =
         )
         $ provideOptions wineTxAPI
         $ serveWithContext wineAPIwithSwagger basicCtx
-        $ hoistServerWithContext wineAPIwithSwagger (Proxy :: Proxy '[BasicAuthCheck User]) (Servant.Handler . ExceptT . try)
-        $ wineServer ctx
+        $ hoistServerWithContext wineAPIwithSwagger (Proxy :: Proxy '[BasicAuthCheck User]) (nt env)
+        $ wineServer
   where
     basicCtx = basicAuthServerContext usr pass
+
+    nt :: AppEnv -> AppM a -> Servant.Handler a
+    nt e (AppM action) = Servant.Handler $ ExceptT $ try $ runRIO e action
 
 -- | 'BasicAuthCheck' holds the handler we'll use to verify a username and password.
 authCheck :: Text -> Text -> BasicAuthCheck User
