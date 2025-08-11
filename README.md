@@ -278,6 +278,63 @@ Use the following channels for support or feedback:
 
 1. Report bugs or suggest features via [GitHub Issues] .
 2. Join the Conversation: [GitHub Discussions] .
+
+***
+## 10. Deployment (Docker Compose and Kubernetes)
+
+### 10.1 Docker Compose (server + IPFS)
+
+Prereqs: Docker and Docker Compose.
+
+1) Build and start:
+
+```
+docker compose up -d --build
+```
+
+This brings up two services:
+- ipfs: `ipfs/kubo` with API on 5001 and gateway on 8080
+- server: wine service on 8082
+
+Compose mounts `config_atlas.json`, `config_admin.json`, and `payment.skey` into the container. Edit these files locally before starting.
+
+2) Test upload to IPFS via the service:
+
+```
+curl -u cardano:lovelace -X POST http://localhost:8082/add \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @yourimage.png
+```
+
+3) View via IPFS gateway:
+
+```
+http://localhost:8080/ipfs/<CID>
+```
+
+You can override default credentials and port via environment variables `BASIC_USER`, `BASIC_PASS`, and `PORT`.
+
+### 10.2 Kubernetes (generic cluster)
+
+Prereqs: kubectl pointing to a cluster.
+
+Apply IPFS and server manifests:
+
+```
+kubectl apply -f k8s/wine-ipfs.yaml
+kubectl apply -f k8s/wine-server.yaml
+```
+
+Replace placeholders in the `ConfigMap`/`Secret` in `k8s/wine-server.yaml` with your real values (e.g., Maestro token, validator ref, and payment key). The server talks to IPFS via `http://ipfs.wine.svc.cluster.local:5001`.
+
+To access the API locally:
+
+```
+kubectl -n wine port-forward svc/wine-server 8082:8082
+```
+
+Then open `http://localhost:8082/swagger-ui`.
+
 3. Submit pull requests (PRs) that align with the project’s goals.
 
 ## 10. Future Milestones

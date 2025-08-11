@@ -3,7 +3,7 @@ name:            wine-project
 version:         0.1.0.0
 license:
 build-type:      Simple
-extra-doc-files: README.md
+
 
 common options
   ghc-options:        -Wall
