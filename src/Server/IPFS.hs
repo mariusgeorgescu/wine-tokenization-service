@@ -2,8 +2,12 @@
 
 module IPFS where
 
-import App (AppM (..))
+import App (AppEnv (..), AppM (..))
+import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy.Char8 as BS
+import Network.HTTP.Client (RequestBody (..))
+import qualified Network.HTTP.Client as HC
+import Network.HTTP.Client.MultipartFormData (formDataBody, partFileRequestBody)
 import qualified Network.IPFS as IPFS
 import qualified Network.IPFS.CID.Types as CID
 import qualified Network.IPFS.Client as IPFSC
@@ -12,16 +16,26 @@ import Offchain.Interactions (TokenData (..))
 import RIO
 import qualified RIO.ByteString.Lazy as Lazy
 import qualified RIO.Text as Text
+import Servant.Client.Core (showBaseUrl)
 import System.IO.Error (userError)
 
-
 -- Remote IPFS helpers operating in AppM
+newtype AddResp = AddResp {arHash :: Text}
+
+instance A.FromJSON AddResp where
+  parseJSON = A.withObject "AddResp" $ \o -> AddResp <$> o A..: "Hash"
+
 addToIPFS :: BS.ByteString -> AppM (Either Text Text)
 addToIPFS raw = AppM $ do
-  res <- IPFS.runRemote (IPFSC.add raw)
-  pure $ case res of
-    Right cidVal -> Right (Text.pack (show cidVal))
-    Left err -> Left (Text.pack (show err))
+  AppEnv {aeHttpManager, aeIpfsBaseUrl} <- ask
+  let url = showBaseUrl aeIpfsBaseUrl <> "/api/v0/add"
+  req0 <- liftIO $ HC.parseRequest url
+  -- Provide a dummy filename so Kubo has a 'path'
+  req <- liftIO $ formDataBody [partFileRequestBody "file" "data.bin" (RequestBodyLBS raw)] req0
+  resp <- liftIO $ HC.httpLbs req aeHttpManager
+  case A.eitherDecode (HC.responseBody resp) of
+    Right (AddResp h) -> pure (Right h)
+    Left err -> pure (Left (Text.pack err))
 
 catFromIPFS :: Text -> AppM (Either Text Text)
 catFromIPFS cidTxt = AppM $ do

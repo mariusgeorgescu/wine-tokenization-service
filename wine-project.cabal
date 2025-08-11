@@ -145,6 +145,7 @@ executable server
     , data-has
     , extra
     , http-client
+    , http-client-multipart
     , http-client-tls
     , http-types                   ^>=0.12.4
     , ipfs
@@ -153,6 +154,7 @@ executable server
     , mtl
     , rio
     , servant-client
+    , servant-client-core
     , servant-options
     , servant-server
     , servant-swagger
