@@ -1,0 +1,57 @@
+
+
+services:
+  ipfs:
+    image: ipfs/kubo:release
+    container_name: ipfs
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        ipfs init --profile=server >/dev/null 2>&1 || true;
+        ipfs config Addresses.API /ip4/0.0.0.0/tcp/5001;
+        ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/8080;
+        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]';
+        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "GET", "POST"]';
+        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Credentials '["true"]';
+        exec ipfs daemon --migrate=true
+    ports:
+      - "4001:4001"   # Swarm
+      - "8080:8080"   # Gateway
+      - "5001:5001"   # API -- not needed to be exposed to the outside world
+    volumes:
+      - ipfs_staging:/export
+      - ipfs_data:/data/ipfs
+
+  server:
+    build: .
+    container_name: wine-server
+    restart: unless-stopped
+    environment:
+      - PORT=${PORT:-8082}
+      - IPFS_API_URL=http://ipfs:5001
+    depends_on:
+      - ipfs
+    ports:
+      - "${PORT:-8082}:8082"
+    volumes:
+      - ./config_atlas.json:/app/config_atlas.json:ro
+      - ./config_admin.json:/app/config_admin.json:ro
+    # ENTRYPOINT is set to `server` in Dockerfile; pass credentials as args
+    command: ["${BASIC_USER:-cardano}", "${BASIC_PASS:-lovelace}"]
+
+volumes:
+  ipfs_staging:
+    driver: local
+    driver_opts:
+      type: none
+      device: ./ipfs/staging
+      o: bind
+  ipfs_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ./ipfs/data
+      o: bind
+
+

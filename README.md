@@ -278,6 +278,119 @@ Use the following channels for support or feedback:
 
 1. Report bugs or suggest features via [GitHub Issues] .
 2. Join the Conversation: [GitHub Discussions] .
+
+***
+## 10. Deployment (Docker Compose and Kubernetes)
+
+### 10.1 Docker Compose (server + IPFS)
+
+Prereqs: Docker and Docker Compose.
+
+1) Build and start:
+
+```
+docker compose up -d --build
+```
+
+This brings up two services:
+- ipfs: `ipfs/kubo` with API on 5001 and gateway on 8080
+- server: wine service on 8082
+
+Compose mounts `config_atlas.json`, `config_admin.json`, into the container. Edit these files locally before starting.
+
+2) Test upload to IPFS via the service:
+
+```
+curl -u cardano:lovelace -X POST http://localhost:8082/add \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @yourimage.png
+```
+
+3) View via IPFS gateway:
+
+```
+http://localhost:8080/ipfs/<CID>
+```
+
+You can override default credentials and port via environment variables `BASIC_USER`, `BASIC_PASS`, and `PORT`.
+
+
+### 10.2 Auto-start on boot with systemd (Docker Compose)
+
+Use the provided unit `systemd/wine-project.service` to have the stack start automatically at boot and survive reboots.
+
+1) Place the project on the server (Linux with systemd), e.g. at `/opt/wine-project`, so that `/opt/wine-project/docker-compose.yml` exists.
+
+2) Review and, if needed, edit the unit template so `WorkingDirectory` matches your actual path:
+
+```
+[Service]
+WorkingDirectory=/opt/wine-project
+Environment=COMPOSE_PROJECT_NAME=wine-project
+```
+
+3) Install the unit and reload systemd:
+
+```bash
+sudo install -D -m 0644 /opt/wine-project/systemd/wine-project.service /etc/systemd/system/wine-project.service
+sudo systemctl daemon-reload
+```
+
+4) Ensure Docker starts at boot:
+
+```bash
+sudo systemctl enable --now docker
+```
+
+5) (Optional) Provide environment via a file instead of editing the unit:
+
+```bash
+printf "PORT=8082\nBASIC_USER=cardano\nBASIC_PASS=lovelace\n" | sudo tee /etc/wine-project.env >/dev/null
+sudo systemctl edit wine-project.service
+```
+Add:
+
+```
+[Service]
+EnvironmentFile=/etc/wine-project.env
+```
+
+Then reload:
+
+```bash
+sudo systemctl daemon-reload
+```
+
+6) Enable and start the service:
+
+```bash
+sudo systemctl enable --now wine-project.service
+```
+
+7) Verify status and running containers:
+
+```bash
+systemctl status wine-project.service
+docker compose -f /opt/wine-project/docker-compose.yml ps | cat
+```
+
+8) Update to the latest images and redeploy (triggers pull + up -d defined in the unit's reload):
+
+```bash
+sudo systemctl reload wine-project.service
+```
+
+9) View logs:
+
+```bash
+journalctl -u wine-project.service -e -n 200 -f
+```
+
+Notes:
+- The unit uses `/usr/bin/docker compose`. Adjust if Docker lives elsewhere (check with `command -v docker`).
+- The Compose file already sets `restart: unless-stopped` for services; the systemd unit orchestrates bringing the whole stack up after boot and provides `systemctl` management.
+- For macOS hosts, use `launchd` instead of systemd.
+
 3. Submit pull requests (PRs) that align with the project’s goals.
 
 ## 10. Future Milestones

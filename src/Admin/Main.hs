@@ -30,7 +30,7 @@ import Offchain.Context (
     runTx',
  )
 import Offchain.OffchainUtils (
-    decodeConfigFile,
+    decodeConfigEnvOrFile,
     yellowColorString,
  )
 import Offchain.Operations (addRefScriptSkeleton)
@@ -49,8 +49,8 @@ main = do
     args <- getArgs
     case args of
         ["deploy-validator", privKeyFile] -> do
-            putStrLn $ yellowColorString "Reading atlas configuration file ..."
-            atlasConfig <- decodeConfigFile @GYCoreConfig atlasCoreConfig
+            putStrLn $ yellowColorString "Reading atlas configuration (env or file) ..."
+            atlasConfig <- decodeConfigEnvOrFile @GYCoreConfig "ATLAS_CONFIG_JSON" atlasCoreConfig
 
             putStrLn $ yellowColorString $ "Reading signing key file from " <> privKeyFile
             signKey <- readPaymentSigningKey privKeyFile
