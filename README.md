@@ -335,6 +335,82 @@ kubectl -n wine port-forward svc/wine-server 8082:8082
 
 Then open `http://localhost:8082/swagger-ui`.
 
+### 10.3 Auto-start on boot with systemd (Docker Compose)
+
+Use the provided unit `systemd/wine-project.service` to have the stack start automatically at boot and survive reboots.
+
+1) Place the project on the server (Linux with systemd), e.g. at `/opt/wine-project`, so that `/opt/wine-project/docker-compose.yml` exists.
+
+2) Review and, if needed, edit the unit template so `WorkingDirectory` matches your actual path:
+
+```
+[Service]
+WorkingDirectory=/opt/wine-project
+Environment=COMPOSE_PROJECT_NAME=wine-project
+```
+
+3) Install the unit and reload systemd:
+
+```bash
+sudo install -D -m 0644 /opt/wine-project/systemd/wine-project.service /etc/systemd/system/wine-project.service
+sudo systemctl daemon-reload
+```
+
+4) Ensure Docker starts at boot:
+
+```bash
+sudo systemctl enable --now docker
+```
+
+5) (Optional) Provide environment via a file instead of editing the unit:
+
+```bash
+printf "PORT=8082\nBASIC_USER=cardano\nBASIC_PASS=lovelace\n" | sudo tee /etc/wine-project.env >/dev/null
+sudo systemctl edit wine-project.service
+```
+Add:
+
+```
+[Service]
+EnvironmentFile=/etc/wine-project.env
+```
+
+Then reload:
+
+```bash
+sudo systemctl daemon-reload
+```
+
+6) Enable and start the service:
+
+```bash
+sudo systemctl enable --now wine-project.service
+```
+
+7) Verify status and running containers:
+
+```bash
+systemctl status wine-project.service
+docker compose -f /opt/wine-project/docker-compose.yml ps | cat
+```
+
+8) Update to the latest images and redeploy (triggers pull + up -d defined in the unit's reload):
+
+```bash
+sudo systemctl reload wine-project.service
+```
+
+9) View logs:
+
+```bash
+journalctl -u wine-project.service -e -n 200 -f
+```
+
+Notes:
+- The unit uses `/usr/bin/docker compose`. Adjust if Docker lives elsewhere (check with `command -v docker`).
+- The Compose file already sets `restart: unless-stopped` for services; the systemd unit orchestrates bringing the whole stack up after boot and provides `systemctl` management.
+- For macOS hosts, use `launchd` instead of systemd.
+
 3. Submit pull requests (PRs) that align with the project’s goals.
 
 ## 10. Future Milestones

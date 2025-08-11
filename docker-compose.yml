@@ -1,22 +1,24 @@
-version: "3.9"
+
 
 services:
   ipfs:
     image: ipfs/kubo:release
     container_name: ipfs
     restart: unless-stopped
-    command: >-
-      sh -c "ipfs init --profile=server >/dev/null 2>&1 || true;
-      ipfs config Addresses.API /ip4/0.0.0.0/tcp/5001;
-      ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/8080;
-      ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '[\"*\"]';
-      ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '[\"PUT\", \"GET\", \"POST\"]';
-      ipfs config --json API.HTTPHeaders.Access-Control-Allow-Credentials '[\"true\"]';
-      exec ipfs daemon --migrate=true"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        ipfs init --profile=server >/dev/null 2>&1 || true;
+        ipfs config Addresses.API /ip4/0.0.0.0/tcp/5001;
+        ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/8080;
+        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]';
+        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "GET", "POST"]';
+        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Credentials '["true"]';
+        exec ipfs daemon --migrate=true
     ports:
       - "4001:4001"   # Swarm
       - "8080:8080"   # Gateway
-      # - "5001:5001"   # API -- not needed to be exposed to the outside world
+      - "5001:5001"   # API -- not needed to be exposed to the outside world
     volumes:
       - ipfs_staging:/export
       - ipfs_data:/data/ipfs
