@@ -43,13 +43,13 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: /mnt/ipfs/staging
+      device: ./ipfs/staging
       o: bind
   ipfs_data:
     driver: local
     driver_opts:
       type: none
-      device: /mnt/ipfs/data
+      device: ./ipfs/data
       o: bind
 
 
