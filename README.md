@@ -296,7 +296,7 @@ This brings up two services:
 - ipfs: `ipfs/kubo` with API on 5001 and gateway on 8080
 - server: wine service on 8082
 
-Compose mounts `config_atlas.json`, `config_admin.json`, and `payment.skey` into the container. Edit these files locally before starting.
+Compose mounts `config_atlas.json`, `config_admin.json`, into the container. Edit these files locally before starting.
 
 2) Test upload to IPFS via the service:
 
@@ -314,28 +314,8 @@ http://localhost:8080/ipfs/<CID>
 
 You can override default credentials and port via environment variables `BASIC_USER`, `BASIC_PASS`, and `PORT`.
 
-### 10.2 Kubernetes (generic cluster)
 
-Prereqs: kubectl pointing to a cluster.
-
-Apply IPFS and server manifests:
-
-```
-kubectl apply -f k8s/wine-ipfs.yaml
-kubectl apply -f k8s/wine-server.yaml
-```
-
-Replace placeholders in the `ConfigMap`/`Secret` in `k8s/wine-server.yaml` with your real values (e.g., Maestro token, validator ref, and payment key). The server talks to IPFS via `http://ipfs.wine.svc.cluster.local:5001`.
-
-To access the API locally:
-
-```
-kubectl -n wine port-forward svc/wine-server 8082:8082
-```
-
-Then open `http://localhost:8082/swagger-ui`.
-
-### 10.3 Auto-start on boot with systemd (Docker Compose)
+### 10.2 Auto-start on boot with systemd (Docker Compose)
 
 Use the provided unit `systemd/wine-project.service` to have the stack start automatically at boot and survive reboots.
 
