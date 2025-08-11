@@ -45,10 +45,10 @@ main = do
             _ -> ("cardano" :: Text, "lovelace" :: Text) -- Default user and password for Basic Auth
     putStrLn $ yellowColorString "Writing Swagger file ..."
     BL8.writeFile "swagger-api.json" (encodePretty apiSwagger)
-    putStrLn $ yellowColorString "Reading atlas configuration file ..."
-    atlasConfig <- decodeConfigFile @GYCoreConfig atlasCoreConfig
-    putStrLn $ yellowColorString "Reading admin configuration file ..."
-    adminContext <- decodeConfigFile @WineAdminContext adminConfig
+    putStrLn $ yellowColorString "Reading atlas configuration (env or file) ..."
+    atlasConfig <- decodeConfigEnvOrFile @GYCoreConfig "ATLAS_CONFIG_JSON" atlasCoreConfig
+    putStrLn $ yellowColorString "Reading admin configuration (env or file) ..."
+    adminContext <- decodeConfigEnvOrFile @WineAdminContext "ADMIN_CONTEXT_JSON" adminConfig
     putStrLn $ yellowColorString "Loading Providers ..."
     withCfgProviders atlasConfig (read @GYLogNamespace "wine-server") $ \providers -> do
         let addminAddr = addressFromPaymentKeyHash (cfgNetworkId atlasConfig) (paymentKeyHash . paymentVerificationKey . winePaymentSigningKey $ adminContext)
